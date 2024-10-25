@@ -1,4 +1,4 @@
-AC_INIT([rofi-plugin-template], [0.0.1], [https://my-neat-plugin.org//],[],[https://support.my-neat-plugin.org/])
+AC_INIT([rofi-world], [0.0.1], [https://my-neat-plugin.org//],[],[https://support.my-neat-plugin.org/])
 
 AC_CONFIG_HEADER([config.h])
 
