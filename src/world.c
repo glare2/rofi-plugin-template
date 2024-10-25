@@ -38,6 +38,12 @@
 
 G_MODULE_EXPORT Mode mode;
 
+typedef struct
+{
+  char *text;
+  char *icon;
+} EntryData;
+
 /**
  * The internal data structure holding the private data of the TEST Mode.
  */
@@ -47,11 +53,7 @@ typedef struct
   unsigned int array_length;
 } WorldModePrivateData;
 
-typedef struct
-{
-  char *text;
-  char *icon;
-} EntryData;
+
 
 static void get_world (  Mode *sw )
 {
@@ -99,6 +101,19 @@ static ModeMode world_mode_result ( Mode *sw, int mretv, char **input, unsigned 
   return retv;
 }
 
+static void free_array ( WorldModePrivateData *pd )
+{
+  for ( unsigned int i = 0; i < pd->array_length; i++ )
+  {
+    EntryData *entry = & ( pd->array[i] );
+    g_free ( entry->text );
+    g_free ( entry->icon );
+  }
+  g_free ( pd-> array );
+  pd->array = NULL;
+  pd->array_length = 0;
+}
+
 static void world_mode_destroy ( Mode *sw )
 {
   WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
@@ -109,32 +124,21 @@ static void world_mode_destroy ( Mode *sw )
   }
 }
 
-static void free_array ( WorldModePrivateData *pd )
-{
-  for ( unsigned int i = 0; i < pd->array_length; i++ )
-  {
-    EntryData *entry = & ( pd->array[i] );
-    g_free ( entry->text );
-    g_free (entry->path );
-  }
-  g_free ( pd-> array );
-  pd->array = NULL;
-  pd->array_length = 0;
-}
 
-static void push_array(const WorldModePrivateData *pd, const char *text, const char *icon)
+
+static void push_array(WorldModePrivateData *pd, const char *text, const char *icon)
 {
   pd->array = g_realloc ( pd->array, (pd->array_length + 1) * sizeof(EntryData) );
   pd->array[ pd->array_length ].text = g_strdup( text );
   pd->array[ pd->array_length ].icon = g_strdup( icon );
   pd->array_length ++;
 }
-
+/*
 static void replace_array(const WorldModePrivateData *pd, const char *text, const char *icon)
 {
   free_array( pd );
   
-}
+  }*/
 
 static char *_get_display_value ( const Mode *sw, unsigned int selected_line, G_GNUC_UNUSED int *state, G_GNUC_UNUSED GList **attr_list, int get_entry )
 {
@@ -158,7 +162,7 @@ static int world_token_match ( const Mode *sw, rofi_int_matcher **tokens, unsign
   WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
 
   // Call default matching function.
-  return helper_token_match ( tokens, pd->array[index]);
+  return helper_token_match ( tokens, pd->array[index].text);
 }
 
 
