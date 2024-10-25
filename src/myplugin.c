@@ -43,72 +43,91 @@ G_MODULE_EXPORT Mode mode;
  */
 typedef struct
 {
-    char **array;
-    unsigned int array_length;
+  EntryData *array;
+  unsigned int array_length;
 } WorldModePrivateData;
 
+typedef struct
+{
+  char *text;
+  char *icon;
+} EntryData;
 
 static void get_world (  Mode *sw )
 {
-    /** 
-     * Get the entries to display.
-     * this gets called on plugin initialization.
-     */
+  /** 
+   * Get the entries to display.
+   * this gets called on plugin initialization.
+   */
 }
 
 
 static int world_mode_init ( Mode *sw )
 {
-    /**
-     * Called on startup when enabled (in modi list)
-     */
-    if ( mode_get_private_data ( sw ) == NULL ) {
-        WorldModePrivateData *pd = g_malloc0 ( sizeof ( *pd ) );
-        mode_set_private_data ( sw, (void *) pd );
-        // Load content.
-        get_world ( sw );
-    }
-    return TRUE;
+  /**
+   * Called on startup when enabled (in modi list)
+   */
+  if ( mode_get_private_data ( sw ) == NULL ) {
+    WorldModePrivateData *pd = g_malloc0 ( sizeof ( *pd ) );
+    mode_set_private_data ( sw, (void *) pd );
+    // Load content.
+    get_world ( sw );
+  }
+  return TRUE;
 }
 static unsigned int world_mode_get_num_entries ( const Mode *sw )
 {
-    const WorldModePrivateData *pd = (const WorldModePrivateData *) mode_get_private_data ( sw );
-    return pd->array_length;
+  const WorldModePrivateData *pd = (const WorldModePrivateData *) mode_get_private_data ( sw );
+  return pd->array_length;
 }
 
 static ModeMode world_mode_result ( Mode *sw, int mretv, char **input, unsigned int selected_line )
 {
-    ModeMode           retv  = MODE_EXIT;
-    WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
-    if ( mretv & MENU_NEXT ) {
-        retv = NEXT_DIALOG;
-    } else if ( mretv & MENU_PREVIOUS ) {
-        retv = PREVIOUS_DIALOG;
-    } else if ( mretv & MENU_QUICK_SWITCH ) {
-        retv = ( mretv & MENU_LOWER_MASK );
-    } else if ( ( mretv & MENU_OK ) ) {
-        retv = RELOAD_DIALOG;
-    } else if ( ( mretv & MENU_ENTRY_DELETE ) == MENU_ENTRY_DELETE ) {
-        retv = RELOAD_DIALOG;
-    }
-    return retv;
+  ModeMode           retv  = MODE_EXIT;
+  WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
+  if ( mretv & MENU_NEXT ) {
+    retv = NEXT_DIALOG;
+  } else if ( mretv & MENU_PREVIOUS ) {
+    retv = PREVIOUS_DIALOG;
+  } else if ( mretv & MENU_QUICK_SWITCH ) {
+    retv = ( mretv & MENU_LOWER_MASK );
+  } else if ( ( mretv & MENU_OK ) ) { //ENTER
+    retv = MENU_CUSTOM_INPUT; //Keep alive
+  } else if ( ( mretv & MENU_ENTRY_DELETE ) == MENU_ENTRY_DELETE ) {
+    retv = RELOAD_DIALOG;
+  }
+  return retv;
 }
 
 static void world_mode_destroy ( Mode *sw )
 {
-    WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
-    if ( pd != NULL ) {
-        g_free ( pd );
-        mode_set_private_data ( sw, NULL );
-    }
+  WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
+  if ( pd != NULL ) {
+    free_list ( pd );
+    g_free ( pd );
+    mode_set_private_data ( sw, NULL );
+  }
+}
+
+static void free_list ( WorldModePrivateData *pd )
+{
+  for ( unsigned int i = 0; i < pd->array_length; i++ )
+  {
+    EntryData *entry = & ( pd->array[i] );
+    g_free ( entry->text );
+    g_free (entry->path );
+  }
+  g_free ( pd-> array );
+  pd->array = NULL;
+  pd->array_length = 0;
 }
 
 static char *_get_display_value ( const Mode *sw, unsigned int selected_line, G_GNUC_UNUSED int *state, G_GNUC_UNUSED GList **attr_list, int get_entry )
 {
-    WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
+  WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
 
-    // Only return the string if requested, otherwise only set state.
-    return get_entry ? g_strdup("n/a"): NULL; 
+  // Only return the string if requested, otherwise only set state.
+  return get_entry ? g_strdup("n/a"): NULL; 
 }
 
 /**
@@ -122,15 +141,15 @@ static char *_get_display_value ( const Mode *sw, unsigned int selected_line, G_
  */
 static int world_token_match ( const Mode *sw, rofi_int_matcher **tokens, unsigned int index )
 {
-    WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
+  WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
 
-    // Call default matching function.
-    return helper_token_match ( tokens, pd->array[index]);
+  // Call default matching function.
+  return helper_token_match ( tokens, pd->array[index]);
 }
 
 
 Mode mode =
-{
+  {
     .abi_version        = ABI_VERSION,
     .name               = "world",
     .cfg_name_key       = "display-world",
@@ -145,4 +164,4 @@ Mode mode =
     ._preprocess_input  = NULL,
     .private_data       = NULL,
     .free               = NULL,
-};
+  };
