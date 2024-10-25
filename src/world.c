@@ -33,6 +33,7 @@
 #include <rofi/mode.h>
 #include <rofi/helper.h>
 #include <rofi/mode-private.h>
+#include <rofi/rofi-icon-fetcher.h>
 
 #include <stdint.h>
 
@@ -42,18 +43,27 @@ typedef struct
 {
   char *text;
   char *icon;
-} EntryData;
+
+  uint32_t icon_fetcher_request;
+} Entry;
 
 /**
  * The internal data structure holding the private data of the TEST Mode.
  */
 typedef struct
 {
-  EntryData *array;
+  Entry *array;
   unsigned int array_length;
 } WorldModePrivateData;
 
-
+static void push_array(WorldModePrivateData *pd, const char *text, const char *icon)
+{
+  pd->array = g_realloc ( pd->array, (pd->array_length + 1) * sizeof(Entry) );
+  pd->array[ pd->array_length ].text = g_strdup( text );
+  pd->array[ pd->array_length ].icon = g_strdup( icon );
+  pd->array[ pd->array_length ].icon_fetcher_request = 0;
+  pd->array_length ++;
+}
 
 static void get_world (  Mode *sw )
 {
@@ -61,6 +71,8 @@ static void get_world (  Mode *sw )
    * Get the entries to display.
    * this gets called on plugin initialization.
    */
+  WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
+  push_array(pd, "Example text that is searchable", "~/Pictures/scr/cursor.png");
 }
 
 
@@ -105,7 +117,7 @@ static void free_array ( WorldModePrivateData *pd )
 {
   for ( unsigned int i = 0; i < pd->array_length; i++ )
   {
-    EntryData *entry = & ( pd->array[i] );
+    Entry *entry = & ( pd->array[i] );
     g_free ( entry->text );
     g_free ( entry->icon );
   }
@@ -124,15 +136,6 @@ static void world_mode_destroy ( Mode *sw )
   }
 }
 
-
-
-static void push_array(WorldModePrivateData *pd, const char *text, const char *icon)
-{
-  pd->array = g_realloc ( pd->array, (pd->array_length + 1) * sizeof(EntryData) );
-  pd->array[ pd->array_length ].text = g_strdup( text );
-  pd->array[ pd->array_length ].icon = g_strdup( icon );
-  pd->array_length ++;
-}
 /*
 static void replace_array(const WorldModePrivateData *pd, const char *text, const char *icon)
 {
@@ -145,7 +148,23 @@ static char *_get_display_value ( const Mode *sw, unsigned int selected_line, G_
   WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
 
   // Only return the string if requested, otherwise only set state.
-  return get_entry ? g_strdup("n/a"): NULL; 
+  if ( !get_entry ) return NULL;
+  return g_strdup( pd->array[selected_line].text );
+}
+
+static cairo_surface_t *_get_icon ( const Mode *sw, unsigned int selected_line, int height )
+{
+  WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
+  Entry *entry = & pd->array[selected_line];
+  if ( entry->icon != NULL)
+  {
+    if ( entry->icon_fetcher_request <= 0 )
+    {
+      entry->icon_fetcher_request = rofi_icon_fetcher_query ( entry->icon, height );
+    }
+    return rofi_icon_fetcher_get ( entry->icon_fetcher_request );
+  }
+  return NULL;
 }
 
 /**
@@ -177,6 +196,7 @@ Mode mode =
     ._destroy           = world_mode_destroy,
     ._token_match       = world_token_match,
     ._get_display_value = _get_display_value,
+    ._get_icon          = _get_icon,
     ._get_message       = NULL,
     ._get_completion    = NULL,
     ._preprocess_input  = NULL,
