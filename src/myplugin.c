@@ -103,13 +103,13 @@ static void world_mode_destroy ( Mode *sw )
 {
   WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
   if ( pd != NULL ) {
-    free_list ( pd );
+    free_array ( pd );
     g_free ( pd );
     mode_set_private_data ( sw, NULL );
   }
 }
 
-static void free_list ( WorldModePrivateData *pd )
+static void free_array ( WorldModePrivateData *pd )
 {
   for ( unsigned int i = 0; i < pd->array_length; i++ )
   {
@@ -120,6 +120,20 @@ static void free_list ( WorldModePrivateData *pd )
   g_free ( pd-> array );
   pd->array = NULL;
   pd->array_length = 0;
+}
+
+static void push_array(const WorldModePrivateData *pd, const char *text, const char *icon)
+{
+  pd->array = g_realloc ( pd->array, (pd->array_length + 1) * sizeof(EntryData) );
+  pd->array[ pd->array_length ].text = g_strdup( text );
+  pd->array[ pd->array_length ].icon = g_strdup( icon );
+  pd->array_length ++;
+}
+
+static void replace_array(const WorldModePrivateData *pd, const char *text, const char *icon)
+{
+  free_array( pd );
+  
 }
 
 static char *_get_display_value ( const Mode *sw, unsigned int selected_line, G_GNUC_UNUSED int *state, G_GNUC_UNUSED GList **attr_list, int get_entry )
