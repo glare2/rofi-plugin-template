@@ -3,10 +3,10 @@ plugindir=${libdir}/rofi/
 
 plugin_LTLIBRARIES = world.la
 
-myplugin_la_SOURCES=\
+world_la_SOURCES=\
 		 src/world.c
-		 $(wildcard src/plugins/*.c)
+		 $(plugin_sources)
 
-myplugin_la_CFLAGS= @glib_CFLAGS@ @rofi_CFLAGS@
-myplugin_la_LIBADD= @glib_LIBS@ @rofi_LIBS@
-myplugin_la_LDFLAGS= -module -avoid-version
+world_la_CFLAGS= @glib_CFLAGS@ @rofi_CFLAGS@
+world_la_LIBADD= @glib_LIBS@ @rofi_LIBS@
+world_la_LDFLAGS= -module -avoid-version

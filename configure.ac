@@ -62,4 +62,6 @@ dnl ---------------------------------------------------------------------
 AC_SUBST([AM_CFLAGS])
 
 AC_CONFIG_FILES([Makefile ])
+plugin_sources=$(wildcard src/plugins/*.c)
+AC_SUBST(plugin_sources)
 AC_OUTPUT
