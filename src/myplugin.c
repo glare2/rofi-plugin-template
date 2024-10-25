@@ -45,10 +45,10 @@ typedef struct
 {
     char **array;
     unsigned int array_length;
-} MYPLUGINModePrivateData;
+} WorldModePrivateData;
 
 
-static void get_myplugin (  Mode *sw )
+static void get_world (  Mode *sw )
 {
     /** 
      * Get the entries to display.
@@ -57,29 +57,29 @@ static void get_myplugin (  Mode *sw )
 }
 
 
-static int myplugin_mode_init ( Mode *sw )
+static int world_mode_init ( Mode *sw )
 {
     /**
      * Called on startup when enabled (in modi list)
      */
     if ( mode_get_private_data ( sw ) == NULL ) {
-        MYPLUGINModePrivateData *pd = g_malloc0 ( sizeof ( *pd ) );
+        WorldModePrivateData *pd = g_malloc0 ( sizeof ( *pd ) );
         mode_set_private_data ( sw, (void *) pd );
         // Load content.
-        get_myplugin ( sw );
+        get_world ( sw );
     }
     return TRUE;
 }
-static unsigned int myplugin_mode_get_num_entries ( const Mode *sw )
+static unsigned int world_mode_get_num_entries ( const Mode *sw )
 {
-    const MYPLUGINModePrivateData *pd = (const MYPLUGINModePrivateData *) mode_get_private_data ( sw );
+    const WorldModePrivateData *pd = (const WorldModePrivateData *) mode_get_private_data ( sw );
     return pd->array_length;
 }
 
-static ModeMode myplugin_mode_result ( Mode *sw, int mretv, char **input, unsigned int selected_line )
+static ModeMode world_mode_result ( Mode *sw, int mretv, char **input, unsigned int selected_line )
 {
     ModeMode           retv  = MODE_EXIT;
-    MYPLUGINModePrivateData *pd = (MYPLUGINModePrivateData *) mode_get_private_data ( sw );
+    WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
     if ( mretv & MENU_NEXT ) {
         retv = NEXT_DIALOG;
     } else if ( mretv & MENU_PREVIOUS ) {
@@ -94,9 +94,9 @@ static ModeMode myplugin_mode_result ( Mode *sw, int mretv, char **input, unsign
     return retv;
 }
 
-static void myplugin_mode_destroy ( Mode *sw )
+static void world_mode_destroy ( Mode *sw )
 {
-    MYPLUGINModePrivateData *pd = (MYPLUGINModePrivateData *) mode_get_private_data ( sw );
+    WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
     if ( pd != NULL ) {
         g_free ( pd );
         mode_set_private_data ( sw, NULL );
@@ -105,7 +105,7 @@ static void myplugin_mode_destroy ( Mode *sw )
 
 static char *_get_display_value ( const Mode *sw, unsigned int selected_line, G_GNUC_UNUSED int *state, G_GNUC_UNUSED GList **attr_list, int get_entry )
 {
-    MYPLUGINModePrivateData *pd = (MYPLUGINModePrivateData *) mode_get_private_data ( sw );
+    WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
 
     // Only return the string if requested, otherwise only set state.
     return get_entry ? g_strdup("n/a"): NULL; 
@@ -120,9 +120,9 @@ static char *_get_display_value ( const Mode *sw, unsigned int selected_line, G_
  *
  * @param returns try when a match.
  */
-static int myplugin_token_match ( const Mode *sw, rofi_int_matcher **tokens, unsigned int index )
+static int world_token_match ( const Mode *sw, rofi_int_matcher **tokens, unsigned int index )
 {
-    MYPLUGINModePrivateData *pd = (MYPLUGINModePrivateData *) mode_get_private_data ( sw );
+    WorldModePrivateData *pd = (WorldModePrivateData *) mode_get_private_data ( sw );
 
     // Call default matching function.
     return helper_token_match ( tokens, pd->array[index]);
@@ -132,13 +132,13 @@ static int myplugin_token_match ( const Mode *sw, rofi_int_matcher **tokens, uns
 Mode mode =
 {
     .abi_version        = ABI_VERSION,
-    .name               = "myplugin",
-    .cfg_name_key       = "display-myplugin",
-    ._init              = myplugin_mode_init,
-    ._get_num_entries   = myplugin_mode_get_num_entries,
-    ._result            = myplugin_mode_result,
-    ._destroy           = myplugin_mode_destroy,
-    ._token_match       = myplugin_token_match,
+    .name               = "world",
+    .cfg_name_key       = "display-world",
+    ._init              = world_mode_init,
+    ._get_num_entries   = world_mode_get_num_entries,
+    ._result            = world_mode_result,
+    ._destroy           = world_mode_destroy,
+    ._token_match       = world_token_match,
     ._get_display_value = _get_display_value,
     ._get_message       = NULL,
     ._get_completion    = NULL,
