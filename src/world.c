@@ -36,6 +36,8 @@
 #include <rofi/rofi-icon-fetcher.h>
 
 #include <stdint.h>
+#include "plugins/plugin.h"
+Plugin *plugins;
 
 G_MODULE_EXPORT Mode mode;
 
@@ -43,7 +45,7 @@ typedef struct
 {
   char *text;
   char *icon;
-
+  void *data; //from plugin
   uint32_t icon_fetcher_request;
 } Entry;
 
