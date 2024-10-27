@@ -92,6 +92,18 @@ static unsigned int world_mode_get_num_entries ( const Mode *sw )
 static ModeMode world_mode_result ( Mode *sw, int mretv, char **input, unsigned int selected_line )
 {
   ModeMode retv = MODE_EXIT;
+
+  // convert selected_line to usable index
+  unsigned int i = 0;
+  unsigned int n = 0;
+  while ( world_plugins[i] != NULL && selected_line >= n + world_plugins[i]->_get_num_entries() )
+  {
+    n += world_plugins[i]->_get_num_entries();
+    i ++;
+  }
+  if ( world_plugins[i] == NULL ) return retv;
+  int plugin_index = selected_line - n;
+  
   if ( mretv & MENU_NEXT ) {
     retv = NEXT_DIALOG;
   } else if ( mretv & MENU_PREVIOUS ) {
@@ -99,7 +111,7 @@ static ModeMode world_mode_result ( Mode *sw, int mretv, char **input, unsigned 
   } else if ( mretv & MENU_QUICK_SWITCH ) {
     retv = ( mretv & MENU_LOWER_MASK );
   } else if ( ( mretv & MENU_OK ) ) { //ENTER
-    retv = MENU_CUSTOM_INPUT; //Keep alive
+    return world_plugins[i]->_execute( plugin_index );
   } else if ( ( mretv & MENU_ENTRY_DELETE ) == MENU_ENTRY_DELETE ) {
     retv = RELOAD_DIALOG;
   }
@@ -171,7 +183,7 @@ static cairo_surface_t *world_mode_get_icon ( const Mode *sw, unsigned int selec
  *
  * @param returns try when a match.
  */
-static int world_mode_token_match ( const Mode *sw, rofi_int_matcher **tokens, unsigned int index )
+static int world_mode_token_match ( const Mode *sw, rofi_int_matcher **tokens, unsigned int selected_line )
 {
 
   /*
@@ -180,9 +192,18 @@ static int world_mode_token_match ( const Mode *sw, rofi_int_matcher **tokens, u
     Now the plugins will display in order of priority
    */
 
+  // convert selected_line to usable index
+  unsigned int i = 0;
+  unsigned int n = 0;
+  while ( world_plugins[i] != NULL && selected_line >= n + world_plugins[i]->_get_num_entries() )
+  {
+    n += world_plugins[i]->_get_num_entries();
+    i ++;
+  }
+
   // Call default matching function.
   //return helper_token_match ( tokens, pd->array[index].text);
-  return true;
+  return world_plugins[i]->_token_match( tokens );
 }
 
 
