@@ -4,9 +4,9 @@ plugindir=${libdir}/rofi/
 plugin_LTLIBRARIES = world.la
 
 world_la_SOURCES=\
-		 src/world.c
-		 $(plugin_sources)
-		 src/plugins.c
+		src/map.c \
+		src/plugins/web_search.c \
+		src/world.c
 
 world_la_CFLAGS= @glib_CFLAGS@ @rofi_CFLAGS@
 world_la_LIBADD= @glib_LIBS@ @rofi_LIBS@

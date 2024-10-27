@@ -1,4 +1,5 @@
-#include "plugin.h"
+#include "web_search.h"
+#include <stdbool.h>
 
 void web_search_init()
 {
@@ -22,17 +23,17 @@ ModeMode web_search_execute(int index)
 
 char *web_search_get_text(int index)
 {
-
+  return "Web Search?";
 }
 
 char *web_search_get_icon(int index)
 {
-
+  return "~/Pictures/scr/cursor.png";
 }
 
 unsigned int web_search_get_num_entries()
 {
-  return 0;
+  return 1;
 }
 
 Plugin web_search_plugin =

@@ -1,3 +1,7 @@
+#include <rofi/mode.h>
+
+#ifndef PLUGIN_H__
+#define PLUGIN_H__
 typedef struct {
   const char *name;
   void (*_init)();
@@ -9,3 +13,5 @@ typedef struct {
   unsigned int (*_get_num_entries)();
   char *message; //rofi message the plugin wants to display
 } Plugin;
+#endif
+
