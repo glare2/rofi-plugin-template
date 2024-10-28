@@ -5,7 +5,9 @@ plugin_LTLIBRARIES = world.la
 
 world_la_SOURCES=\
 		src/map.c \
+		src/utils.c \
 		src/plugins/web_search.c \
+		src/plugins/apps.c \
 		src/world.c
 
 world_la_CFLAGS= @glib_CFLAGS@ @rofi_CFLAGS@

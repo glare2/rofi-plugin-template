@@ -41,8 +41,10 @@
 
 #include "plugins/plugin.h"
 #include "plugins/web_search.h"
+#include "plugins/apps.h"
 Plugin *world_plugins[] = {
   &web_search_plugin,
+  &apps_plugin,
   NULL };
 
 G_MODULE_EXPORT Mode mode;
