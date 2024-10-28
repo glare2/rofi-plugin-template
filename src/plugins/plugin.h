@@ -6,7 +6,8 @@ typedef struct {
   const char *name;
   void (*_init)();
   void (*_destroy)();
-  int (*_token_match)(rofi_int_matcher **tokens); // return priority 0-100, or -1
+  int (*_token_match)(rofi_int_matcher **tokens, unsigned int index);
+   //priority function -- return priority 0-100, or -1
   ModeMode (*_execute)(int index);
   char *(*_get_text)(int index);
   char *(*_get_icon)(int index);

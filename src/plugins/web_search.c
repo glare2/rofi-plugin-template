@@ -16,7 +16,7 @@ void web_search_destroy()
   g_free(web_search_query);
 }
 
-int web_search_token_match(rofi_int_matcher **tokens)
+int web_search_token_match(rofi_int_matcher **tokens, unsigned int index)
 {
   g_free(web_search_query);
   web_search_query = NULL;

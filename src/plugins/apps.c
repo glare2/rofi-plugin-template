@@ -1,3 +1,5 @@
+#define APPS_ENTRY_COUNT 5
+
 #include "apps.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -14,9 +16,12 @@ typedef struct {
 App **apps_array;
 unsigned int apps_length;
 unsigned int apps_capacity;
+App *apps_cache [APPS_ENTRY_COUNT];
+int apps_cache_length;
 
 void apps_init()
 {
+  apps_cache_length = APPS_ENTRY_COUNT;
   apps_length = 0;
   apps_capacity = 16;
   apps_array = g_malloc0( apps_capacity * sizeof( App * ) );
@@ -42,19 +47,19 @@ void apps_init()
 	//printf("Checking %s\n", app_info[i]);
 	if ( starts_with( app_info[i], "Exec=" ))
 	{
-	  char *app_cmd = g_malloc0( (strlen(app_info[i]) - 5) * sizeof( char ) );
+	  char *app_cmd = g_malloc0( (strlen(app_info[i]) - 4) * sizeof( char ) );
 	  strncpy(app_cmd, app_info[i] + 5, strlen(app_info[i]) - 5);
 	  curr_app->cmd = app_cmd;
 	}
 	else if ( starts_with( app_info[i], "Icon=" ))
 	{
-	  char *app_icon = g_malloc0( (strlen(app_info[i]) - 5) * sizeof( char ) );
+	  char *app_icon = g_malloc0( (strlen(app_info[i]) - 4) * sizeof( char ) );
 	  strncpy(app_icon, app_info[i] + 5, strlen(app_info[i]) - 5);
 	  curr_app->icon = app_icon;
 	}
 	else if ( starts_with( app_info[i], "Name=" ))
 	{
-	  char *app_name = g_malloc0( (strlen(app_info[i]) - 5) * sizeof( char ) );
+	  char *app_name = g_malloc0( (strlen(app_info[i]) - 4) * sizeof( char ) );
 	  strncpy(app_name, app_info[i] + 5, strlen(app_info[i]) - 5);
 	  //printf("Writing app_name: %s\n", app_name);
 	  curr_app->name = app_name;
@@ -74,7 +79,7 @@ void apps_init()
       apps_array = g_realloc( apps_array, apps_capacity * sizeof( App * ) );
     }
   }
-
+  g_free( app_files );
   apps_array[ apps_length ] = NULL;
 }
 
@@ -106,43 +111,73 @@ void apps_destroy()
   g_free( apps_array );
 }
 
-int apps_token_match(rofi_int_matcher **tokens)
+int apps_token_match(rofi_int_matcher **tokens, unsigned int index)
 {
-  //helper_token_match
+  //printf("token match %d\n", index);
+  if ( index == 1 )
+  {
+    //cache apps to the cache_array of len 5
+    int i = 0;
+    int count = 0;
+    // O(n)
+    while ( apps_array[i] != NULL )
+    {
+      int m = helper_token_match(tokens, apps_array[i]->name);
+      //printf("cache read for %s returns %d\n", apps_array[i]->name, m);
+      if ( m == true )
+      {
+	//printf("add to cache\n");
+	apps_cache[ count ] = apps_array[i];
+	count ++;
+	if ( count == APPS_ENTRY_COUNT ) break;
+      }
+      i ++;
+    }
+    apps_cache_length = count;
+    if ( apps_cache_length == 0) apps_cache_length = 1; // CANNOT HIT ZERO!!
+    //printf("set apps_cache to %d\n", count);
+    if ( count < APPS_ENTRY_COUNT )
+    { 
+      for ( int j = count; j < APPS_ENTRY_COUNT; j++ )
+      {	  
+	apps_cache[ j ] = NULL;
+      }
+    }
+  }
   
   return true;
 }
 
 ModeMode apps_execute(int index)
 {
-  if( apps_array[0] != NULL && apps_array[0]->cmd != NULL)
+  if( apps_cache[index] != NULL && apps_cache[index]->cmd != NULL)
   {
-    helper_execute_command(NULL, apps_array[0]->cmd, false, NULL);
+    helper_execute_command(NULL, apps_cache[index]->cmd, false, NULL);
   }
   return MODE_EXIT;
 }
 
 char *apps_get_text(int index)
 {
-  if( apps_array[0] != NULL && apps_array[0]->name != NULL)
+  if( apps_cache[index] != NULL && apps_cache[index]->name != NULL)
   {
-    return apps_array[0]->name;
+    return apps_cache[index]->name;
   }
-  return "n/a";
+  return "No Applications Found";
 }
 
 char *apps_get_icon(int index)
 {
-  if( apps_array[0] != NULL && apps_array[0]->icon != NULL)
+  if( apps_cache[index] != NULL && apps_cache[index]->icon != NULL)
   {
-    return apps_array[0]->icon;
+    return apps_cache[index]->icon;
   }
   return "n/a";
 }
 
 unsigned int apps_get_num_entries()
 {
-  return 1;
+  return apps_cache_length;
 }
 
 Plugin apps_plugin =

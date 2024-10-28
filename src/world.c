@@ -205,7 +205,9 @@ static int world_mode_token_match ( const Mode *sw, rofi_int_matcher **tokens, u
 
   // Call default matching function.
   //return helper_token_match ( tokens, pd->array[index].text);
-  return world_plugins[i]->_token_match( tokens );
+  
+  if ( world_plugins[i] != NULL ) return world_plugins[i]->_token_match( tokens, selected_line );
+  return false;
 }
 
 
