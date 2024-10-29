@@ -21,7 +21,7 @@ int apps_cache_length;
 
 void apps_init()
 {
-  apps_cache_length = APPS_ENTRY_COUNT;
+  apps_cache_length = 0;
   apps_length = 0;
   apps_capacity = 16;
   apps_array = g_malloc0( apps_capacity * sizeof( App * ) );
@@ -72,6 +72,12 @@ void apps_init()
     g_free( info_cmd );
     g_free( app_info );
     g_free( app_files[ apps_length ] );
+    if ( apps_cache_length < APPS_ENTRY_COUNT
+	 && apps_array[apps_length]->name != NULL )
+    {
+      apps_cache[apps_cache_length] = apps_array[apps_length];
+      apps_cache_length ++;
+    }
     apps_length ++;
     if ( apps_length == apps_capacity )
     {
@@ -116,13 +122,15 @@ int apps_token_match(rofi_int_matcher **tokens, unsigned int index)
   //printf("token match %d\n", index);
   if ( index == 1 )
   {
+    //printf("caching apps\n");
     //cache apps to the cache_array of len 5
     int i = 0;
     int count = 0;
     // O(n)
     while ( apps_array[i] != NULL )
     {
-      int m = helper_token_match(tokens, apps_array[i]->name);
+      int m = false;
+      if ( apps_array[i]->name != NULL ) m = helper_token_match(tokens, apps_array[i]->name);
       //printf("cache read for %s returns %d\n", apps_array[i]->name, m);
       if ( m == true )
       {
@@ -161,6 +169,14 @@ char *apps_get_text(int index)
 {
   if( apps_cache[index] != NULL && apps_cache[index]->name != NULL)
   {
+    if ( index == APPS_ENTRY_COUNT )
+    {
+      char *label = g_malloc0( (strlen(apps_cache[index]->name) + 32) * sizeof(char));
+      sprintf(label, "%s (+%d more programs)",
+	      apps_cache[index]->name,
+	      apps_length - APPS_ENTRY_COUNT );
+      return label;
+    }
     return apps_cache[index]->name;
   }
   return "No Applications Found";
