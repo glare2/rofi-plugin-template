@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <rofi/helper.h>
 #include <rofi/mode.h>
+#include "../utils.h"
 
 char *web_search_query;
 
@@ -16,27 +17,22 @@ void web_search_destroy()
   g_free(web_search_query);
 }
 
+int web_search_get_priority(rofi_int_matcher **tokens)
+{
+  char *search_str = get_str_from_tokens( tokens );
+  // higher char count, spaces, punctuation, sentence structure
+  int search_len = strlen( search_str );
+  if ( search_len < 10 ) return 0;
+  int priority = search_len * 3;
+  if ( priority < 100 ) return priority;
+  return 100;
+}
+
 int web_search_token_match(rofi_int_matcher **tokens, unsigned int index)
 {
+  web_search_plugin.priority = web_search_get_priority( tokens );
   g_free(web_search_query);
-  web_search_query = NULL;
-  //tokens split by spaces
-  int i = 0;
-  if ( tokens[i] != NULL )
-  {
-    const char *first_token = g_regex_get_pattern ( tokens[i]->regex );
-    web_search_query = g_strdup(first_token);
-    i ++;
-  }
-  while ( tokens[i] != NULL )
-  {
-    const char *token = g_regex_get_pattern ( tokens[i]->regex );
-    web_search_query = g_realloc(web_search_query,
-				 sizeof(char) * (strlen(web_search_query) + strlen(token) + 2));
-    strcat(web_search_query, " ");
-    strcat(web_search_query, token);
-    i ++;
-  }
+  web_search_query = get_str_from_tokens(tokens);
   
   return true;
 }
@@ -76,5 +72,7 @@ Plugin web_search_plugin =
     ._get_text = web_search_get_text,
     ._get_icon = web_search_get_icon,
     ._get_num_entries = web_search_get_num_entries,
-    .message = NULL
+    ._get_priority = web_search_get_priority,
+    .message = NULL,
+    .priority = 0
   };

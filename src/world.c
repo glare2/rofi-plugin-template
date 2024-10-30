@@ -42,10 +42,13 @@
 #include "plugins/plugin.h"
 #include "plugins/web_search.h"
 #include "plugins/apps.h"
+
 Plugin *world_plugins[] = {
   &web_search_plugin,
   &apps_plugin,
   NULL };
+
+int world_plugins_length;
 
 G_MODULE_EXPORT Mode mode;
 
@@ -68,6 +71,7 @@ uint32_t icon_map_get(char *key)
 
 static int world_mode_init ( Mode *sw )
 {
+  world_plugins_length = sizeof(world_plugins) / sizeof(world_plugins[0]) - 1;
   map_init(&icon_map); 
   int i = 0;
   while ( world_plugins[i] != NULL )
@@ -176,15 +180,13 @@ static cairo_surface_t *world_mode_get_icon ( const Mode *sw, unsigned int selec
   return NULL;
 }
 
-/**
- * @param sw The mode object.
- * @param tokens The tokens to match against.
- * @param index  The index in this plugin to match against.
- *
- * Match the entry.
- *
- * @param returns try when a match.
- */
+int world_priority_compare(const void *a, const void *b)
+{
+  Plugin *plugin_a = *(Plugin **) a;
+  Plugin *plugin_b = *(Plugin **) b;
+  return ( plugin_b->priority - plugin_a->priority );
+}
+
 static int world_mode_token_match ( const Mode *sw, rofi_int_matcher **tokens, unsigned int selected_line )
 {
 
@@ -194,6 +196,17 @@ static int world_mode_token_match ( const Mode *sw, rofi_int_matcher **tokens, u
     Now the plugins will display in order of priority
    */
 
+  if ( selected_line == 0 )
+  {
+    // update priorities
+    for ( int j=0; j<world_plugins_length; j++)
+    {
+      world_plugins[j]->priority = world_plugins[j]->_get_priority( tokens );
+      printf("new priority of %s: %d\n", world_plugins[j]->name, world_plugins[j]->priority);
+    }
+    // sort plugins, so highest priority is on top
+    qsort(world_plugins, world_plugins_length, sizeof(Plugin *), world_priority_compare);
+  }
   // convert selected_line to usable index
   unsigned int i = 0;
   unsigned int n = 0;
@@ -202,11 +215,11 @@ static int world_mode_token_match ( const Mode *sw, rofi_int_matcher **tokens, u
     n += world_plugins[i]->_get_num_entries();
     i ++;
   }
-
+  int plugin_index = selected_line - n;
   // Call default matching function.
   //return helper_token_match ( tokens, pd->array[index].text);
   
-  if ( world_plugins[i] != NULL ) return world_plugins[i]->_token_match( tokens, selected_line );
+  if ( world_plugins[i] != NULL ) return world_plugins[i]->_token_match( tokens, plugin_index );
   return false;
 }
 

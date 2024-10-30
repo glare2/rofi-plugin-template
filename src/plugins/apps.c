@@ -117,11 +117,21 @@ void apps_destroy()
   g_free( apps_array );
 }
 
+int apps_get_priority(rofi_int_matcher **tokens)
+{
+  char *search_str = get_str_from_tokens( tokens );
+  if ( apps_cache[0] == NULL ) return 0;
+  int priority = strlen( search_str ) * 10;
+  if ( priority < 100 ) return priority;
+  return 100;
+}
+
 int apps_token_match(rofi_int_matcher **tokens, unsigned int index)
 {
   //printf("token match %d\n", index);
-  if ( index == 1 )
+  if ( index == 0 )
   {
+    apps_plugin.priority = apps_get_priority( tokens );
     //printf("caching apps\n");
     //cache apps to the cache_array of len 5
     int i = 0;
@@ -169,14 +179,15 @@ char *apps_get_text(int index)
 {
   if( apps_cache[index] != NULL && apps_cache[index]->name != NULL)
   {
-    if ( index == APPS_ENTRY_COUNT )
+    /*
+    if ( index == APPS_ENTRY_COUNT - 1 )
     {
       char *label = g_malloc0( (strlen(apps_cache[index]->name) + 32) * sizeof(char));
       sprintf(label, "%s (+%d more programs)",
 	      apps_cache[index]->name,
 	      apps_length - APPS_ENTRY_COUNT );
       return label;
-    }
+      }*/
     return apps_cache[index]->name;
   }
   return "No Applications Found";
@@ -206,5 +217,7 @@ Plugin apps_plugin =
     ._get_text = apps_get_text,
     ._get_icon = apps_get_icon,
     ._get_num_entries = apps_get_num_entries,
-    .message = NULL
+    ._get_priority = apps_get_priority,
+    .message = NULL,
+    .priority = 0
   };

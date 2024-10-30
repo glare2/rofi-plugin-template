@@ -1,7 +1,30 @@
 #include "utils.h"
 #include <unistd.h>
 #include <rofi/helper.h>
+#include <rofi/mode.h>
 #include <stdio.h>
+char *get_str_from_tokens(rofi_int_matcher **tokens)
+{
+  int i = 0;
+  char *final_str = NULL;
+  if ( tokens[i] != NULL )
+  {
+    const char *first_token = g_regex_get_pattern ( tokens[i]->regex );
+    final_str = g_strdup(first_token);
+    i ++;
+  }
+  while ( tokens[i] != NULL )
+  {
+    const char *token = g_regex_get_pattern ( tokens[i]->regex );
+    final_str = g_realloc(final_str,
+				 sizeof(char) * (strlen(final_str) + strlen(token) + 2));
+    strcat(final_str, " "); // tokens split by spaces
+    strcat(final_str, token);
+    i ++;
+  }
+  return final_str;
+}
+
 bool starts_with(const char *str, const char *query)
 {
   //if (strlen(query) > strlen(str)) return false;
