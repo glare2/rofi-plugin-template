@@ -3,9 +3,8 @@
 #include "apps.h"
 #include <stdbool.h>
 #include <stdio.h>
-#include <rofi/helper.h>
-#include <rofi/mode.h>
 #include "../utils.h"
+#include <execinfo.h>
 
 typedef struct {
   char *name;
@@ -28,7 +27,6 @@ void apps_init()
   char **app_files = get_command_lines("ls /usr/share/applications");
   while ( app_files[ apps_length ] != NULL )
   {
-    //printf("Getting app info for %s", app_files[apps_length]);
     char *info_cmd = g_strconcat( "awk '/^Exec=|^Icon=|^Name=/' ",
 				 "/usr/share/applications/",
 				 app_files[ apps_length ],
@@ -44,7 +42,6 @@ void apps_init()
     {
       if ( strlen( app_info[i] ) > 5)
       {
-	//printf("Checking %s\n", app_info[i]);
 	if ( starts_with( app_info[i], "Exec=" ))
 	{
 	  char *app_cmd = g_malloc0( (strlen(app_info[i]) - 4) * sizeof( char ) );
@@ -61,7 +58,6 @@ void apps_init()
 	{
 	  char *app_name = g_malloc0( (strlen(app_info[i]) - 4) * sizeof( char ) );
 	  strncpy(app_name, app_info[i] + 5, strlen(app_info[i]) - 5);
-	  //printf("Writing app_name: %s\n", app_name);
 	  curr_app->name = app_name;
 	}
       }
@@ -117,9 +113,8 @@ void apps_destroy()
   g_free( apps_array );
 }
 
-int apps_get_priority(rofi_int_matcher **tokens)
+int apps_get_priority(char *search_str)
 {
-  char *search_str = get_str_from_tokens( tokens );
   if ( apps_cache[0] == NULL ) return 0;
   int priority = strlen( search_str ) * 10;
   if ( priority < 100 ) return priority;
@@ -128,11 +123,10 @@ int apps_get_priority(rofi_int_matcher **tokens)
 
 int apps_token_match(rofi_int_matcher **tokens, unsigned int index)
 {
-  //printf("token match %d\n", index);
   if ( index == 0 )
   {
-    apps_plugin.priority = apps_get_priority( tokens );
-    //printf("caching apps\n");
+    char *search_str = get_str_from_tokens( tokens );
+    apps_plugin.priority = apps_get_priority( search_str );
     //cache apps to the cache_array of len 5
     int i = 0;
     int count = 0;
@@ -141,10 +135,8 @@ int apps_token_match(rofi_int_matcher **tokens, unsigned int index)
     {
       int m = false;
       if ( apps_array[i]->name != NULL ) m = helper_token_match(tokens, apps_array[i]->name);
-      //printf("cache read for %s returns %d\n", apps_array[i]->name, m);
       if ( m == true )
       {
-	//printf("add to cache\n");
 	apps_cache[ count ] = apps_array[i];
 	count ++;
 	if ( count == APPS_ENTRY_COUNT ) break;
@@ -153,7 +145,6 @@ int apps_token_match(rofi_int_matcher **tokens, unsigned int index)
     }
     apps_cache_length = count;
     if ( apps_cache_length == 0) apps_cache_length = 1; // CANNOT HIT ZERO!!
-    //printf("set apps_cache to %d\n", count);
     if ( count < APPS_ENTRY_COUNT )
     { 
       for ( int j = count; j < APPS_ENTRY_COUNT; j++ )
@@ -161,18 +152,19 @@ int apps_token_match(rofi_int_matcher **tokens, unsigned int index)
 	apps_cache[ j ] = NULL;
       }
     }
+    g_free( search_str );
   }
   
   return true;
 }
 
-ModeMode apps_execute(int index)
+char *apps_get_cmd(int index)
 {
   if( apps_cache[index] != NULL && apps_cache[index]->cmd != NULL)
   {
-    helper_execute_command(NULL, apps_cache[index]->cmd, false, NULL);
+    return g_strdup( apps_cache[index]->cmd );
   }
-  return MODE_EXIT;
+  return NULL;
 }
 
 char *apps_get_text(int index)
@@ -202,8 +194,14 @@ char *apps_get_icon(int index)
   return "n/a";
 }
 
-unsigned int apps_get_num_entries()
+unsigned int apps_get_num_matches()
 {
+  /*
+    Rofi seems to have an issue when the query string is cleared
+    that causes it to reset all entries to the first returned
+    num entries. By returning 1 as the first entry, we will
+    never try to display more than 1 null value.
+  */
   return apps_cache_length;
 }
 
@@ -213,11 +211,11 @@ Plugin apps_plugin =
     ._init = apps_init,
     ._destroy = apps_destroy,
     ._token_match = apps_token_match,
-    ._execute = apps_execute,
+    ._get_cmd = apps_get_cmd,
     ._get_text = apps_get_text,
     ._get_icon = apps_get_icon,
-    ._get_num_entries = apps_get_num_entries,
+    ._get_num_matches = apps_get_num_matches,
     ._get_priority = apps_get_priority,
     .message = NULL,
-    .priority = 0
+    .priority = 40
   };

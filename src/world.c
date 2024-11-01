@@ -38,6 +38,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "map.h"
+#include "utils.h"
 
 #include "plugins/plugin.h"
 #include "plugins/web_search.h"
@@ -89,26 +90,32 @@ static unsigned int world_mode_get_num_entries ( const Mode *sw )
   int n = 0;
   while ( world_plugins[i] != NULL )
   {
-    n += world_plugins[i]->_get_num_entries();
+    n += world_plugins[i]->_get_num_matches();
     i ++;
   }
   return n;
 }
 
-static ModeMode world_mode_result ( Mode *sw, int mretv, char **input, unsigned int selected_line )
+int get_plugin_index(unsigned int selected_line, int *plugin)
 {
-  ModeMode retv = MODE_EXIT;
-
   // convert selected_line to usable index
   unsigned int i = 0;
   unsigned int n = 0;
-  while ( world_plugins[i] != NULL && selected_line >= n + world_plugins[i]->_get_num_entries() )
+  while ( world_plugins[i] != NULL && selected_line >= n + world_plugins[i]->_get_num_matches() )
   {
-    n += world_plugins[i]->_get_num_entries();
+    n += world_plugins[i]->_get_num_matches();
     i ++;
   }
+  if ( plugin != NULL ) *plugin = i;
+  return selected_line - n;
+}
+
+static ModeMode world_mode_result ( Mode *sw, int mretv, char **input, unsigned int selected_line )
+{
+  ModeMode retv = MODE_EXIT;
+  int i = 0;
+  int plugin_index = get_plugin_index(selected_line, &i);
   if ( world_plugins[i] == NULL ) return retv;
-  int plugin_index = selected_line - n;
   
   if ( mretv & MENU_NEXT ) {
     retv = NEXT_DIALOG;
@@ -117,7 +124,13 @@ static ModeMode world_mode_result ( Mode *sw, int mretv, char **input, unsigned 
   } else if ( mretv & MENU_QUICK_SWITCH ) {
     retv = ( mretv & MENU_LOWER_MASK );
   } else if ( ( mretv & MENU_OK ) ) { //ENTER
-    return world_plugins[i]->_execute( plugin_index );
+    char *cmd = world_plugins[i]->_get_cmd( plugin_index );
+    if ( cmd != NULL )
+    {
+      helper_execute_command(NULL, cmd, false, NULL);
+      g_free( cmd );
+    } else printf("null cmd from plugin %s\n", world_plugins[i]->name);
+    return MODE_EXIT;
   } else if ( ( mretv & MENU_ENTRY_DELETE ) == MENU_ENTRY_DELETE ) {
     retv = RELOAD_DIALOG;
   }
@@ -137,36 +150,36 @@ static void world_mode_destroy ( Mode *sw )
   //g_free ( world_plugins );
 }
 
+
+
 static char *world_mode_get_display_value ( const Mode *sw, unsigned int selected_line, G_GNUC_UNUSED int *state, G_GNUC_UNUSED GList **attr_list, int get_entry )
 {
   // Only return the string if requested, otherwise only set state.
   if ( !get_entry ) return NULL;
-  // convert selected_line to usable index
-  unsigned int i = 0;
-  unsigned int n = 0;
-  while ( world_plugins[i] != NULL && selected_line >= n + world_plugins[i]->_get_num_entries() )
+  int i = 0;
+  int plugin_index = get_plugin_index(selected_line, &i);
+  if ( world_plugins[i] == NULL )
   {
-    n += world_plugins[i]->_get_num_entries();
-    i ++;
+    /*
+      This can occur when the user empties their query, causing
+      rofi to believe it can display all entries without calling
+      necessary functions. In cases like that of the apps module,
+      rofi will try to display 5 entries even though apps wants to
+      display only one "No Apps Found" entry.
+    */
+    rofi_view_reload(); // rofi has had an error of some sort
+    return g_strdup( "n/a" );
   }
-  
-  if ( world_plugins[i] == NULL ) return g_strdup( "n/a" );
-  return g_strdup( world_plugins[i]->_get_text ( selected_line - n ) );
+  return g_strdup( world_plugins[i]->_get_text ( plugin_index ) );
 }
 
 static cairo_surface_t *world_mode_get_icon ( const Mode *sw, unsigned int selected_line, int height )
 {
-  // convert selected_line to usable index
-  unsigned int i = 0;
-  unsigned int n = 0;
-  while ( world_plugins[i] != NULL && selected_line >= n + world_plugins[i]->_get_num_entries() )
-  {
-    n += world_plugins[i]->_get_num_entries();
-    i ++;
-  }
+  int i = 0;
+  int plugin_index = get_plugin_index(selected_line, &i);
   if ( world_plugins[i] == NULL ) return NULL;
 
-  char *icon_path = world_plugins[i]->_get_icon ( selected_line - n ); 
+  char *icon_path = world_plugins[i]->_get_icon ( plugin_index ); 
   if ( icon_path != NULL)
   {
     uint32_t icon_fetcher_request = icon_map.get(icon_path);
@@ -187,39 +200,31 @@ int world_priority_compare(const void *a, const void *b)
   return ( plugin_b->priority - plugin_a->priority );
 }
 
+void world_update_priorities(rofi_int_matcher **tokens)
+{
+  char *search_str = get_str_from_tokens( tokens );
+  // update priorities
+  for ( int j=0; j<world_plugins_length; j++)
+  {
+    world_plugins[j]->priority = world_plugins[j]->_get_priority( search_str );
+  }
+  // sort plugins, so highest priority is on top
+  qsort(world_plugins, world_plugins_length, sizeof(Plugin *), world_priority_compare);
+}
+
 static int world_mode_token_match ( const Mode *sw, rofi_int_matcher **tokens, unsigned int selected_line )
 {
-
-  /*
-    Get the plugin priorities
-    Perfom sort on the plugin array using the priority array
-    Now the plugins will display in order of priority
-   */
-
-  if ( selected_line == 0 )
-  {
-    // update priorities
-    for ( int j=0; j<world_plugins_length; j++)
-    {
-      world_plugins[j]->priority = world_plugins[j]->_get_priority( tokens );
-      printf("new priority of %s: %d\n", world_plugins[j]->name, world_plugins[j]->priority);
-    }
-    // sort plugins, so highest priority is on top
-    qsort(world_plugins, world_plugins_length, sizeof(Plugin *), world_priority_compare);
-  }
-  // convert selected_line to usable index
-  unsigned int i = 0;
-  unsigned int n = 0;
-  while ( world_plugins[i] != NULL && selected_line >= n + world_plugins[i]->_get_num_entries() )
-  {
-    n += world_plugins[i]->_get_num_entries();
-    i ++;
-  }
-  int plugin_index = selected_line - n;
+  if ( selected_line == 0 ) world_update_priorities( tokens );
+  int i = 0;
+  int plugin_index = get_plugin_index(selected_line, &i);
   // Call default matching function.
   //return helper_token_match ( tokens, pd->array[index].text);
   
-  if ( world_plugins[i] != NULL ) return world_plugins[i]->_token_match( tokens, plugin_index );
+  if ( world_plugins[i] != NULL )
+  {
+    int rv =  world_plugins[i]->_token_match( tokens, plugin_index );
+    return rv;
+  }
   return false;
 }
 
