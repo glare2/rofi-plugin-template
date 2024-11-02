@@ -1,10 +1,9 @@
 #define APPS_ENTRY_COUNT 5
 
-#include "apps.h"
+#include "plugin.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include "../utils.h"
-#include <execinfo.h>
 
 typedef struct {
   char *name;
@@ -12,6 +11,7 @@ typedef struct {
   char *cmd;
 } App;
 
+Plugin apps_plugin;
 App **apps_array;
 unsigned int apps_length;
 unsigned int apps_capacity;
@@ -206,16 +206,16 @@ unsigned int apps_get_num_matches()
 }
 
 Plugin apps_plugin =
-  {
-    .name = "apps",
-    ._init = apps_init,
-    ._destroy = apps_destroy,
-    ._token_match = apps_token_match,
-    ._get_cmd = apps_get_cmd,
-    ._get_text = apps_get_text,
-    ._get_icon = apps_get_icon,
-    ._get_num_matches = apps_get_num_matches,
-    ._get_priority = apps_get_priority,
-    .message = NULL,
-    .priority = 40
-  };
+{
+  .name = "apps",
+  ._init = apps_init,
+  ._destroy = apps_destroy,
+  ._token_match = apps_token_match,
+  ._get_cmd = apps_get_cmd,
+  ._get_text = apps_get_text,
+  ._get_icon = apps_get_icon,
+  ._get_num_matches = apps_get_num_matches,
+  ._get_priority = apps_get_priority,
+  .message = NULL,
+  .priority = 40
+};

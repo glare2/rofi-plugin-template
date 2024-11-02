@@ -41,13 +41,18 @@
 #include "utils.h"
 
 #include "plugins/plugin.h"
-#include "plugins/web_search.h"
-#include "plugins/apps.h"
+#include "plugins/plugin_registry.h"
 
-Plugin *world_plugins[] = {
-  &web_search_plugin,
-  &apps_plugin,
-  NULL };
+#define WORLD_PLUGIN(name) extern Plugin name;
+WORLD_PLUGIN_REGISTRY
+#undef WORLD_PLUGIN
+
+#define WORLD_PLUGIN(name) &name,
+Plugin *world_plugins[] =
+{
+  WORLD_PLUGIN_REGISTRY
+};
+#undef WORLD_PLUGIN
 
 int world_plugins_length;
 
@@ -72,13 +77,11 @@ uint32_t icon_map_get(char *key)
 
 static int world_mode_init ( Mode *sw )
 {
-  world_plugins_length = sizeof(world_plugins) / sizeof(world_plugins[0]) - 1;
+  world_plugins_length = sizeof(world_plugins) / sizeof(world_plugins[0]);
   map_init(&icon_map); 
-  int i = 0;
-  while ( world_plugins[i] != NULL )
+  for( int i=0; i<world_plugins_length; i++ )
   {
     world_plugins[i]->_init();
-    i ++;
   }
 
   return true;
@@ -86,12 +89,10 @@ static int world_mode_init ( Mode *sw )
 
 static unsigned int world_mode_get_num_entries ( const Mode *sw )
 {
-  int i = 0;
   int n = 0;
-  while ( world_plugins[i] != NULL )
+  for( int i=0; i<world_plugins_length; i++ )
   {
     n += world_plugins[i]->_get_num_matches();
-    i ++;
   }
   return n;
 }
@@ -101,11 +102,11 @@ int get_plugin_index(unsigned int selected_line, int *plugin)
   // convert selected_line to usable index
   unsigned int i = 0;
   unsigned int n = 0;
-  while ( world_plugins[i] != NULL && selected_line >= n + world_plugins[i]->_get_num_matches() )
+  for ( ; i<world_plugins_length && selected_line >= n + world_plugins[i]->_get_num_matches(); i++ )
   {
     n += world_plugins[i]->_get_num_matches();
-    i ++;
   }
+
   if ( plugin != NULL ) *plugin = i;
   return selected_line - n;
 }
@@ -230,20 +231,20 @@ static int world_mode_token_match ( const Mode *sw, rofi_int_matcher **tokens, u
 
 
 Mode mode =
-  {
-    .abi_version        = ABI_VERSION,
-    .name               = "world",
-    .cfg_name_key       = "display-world",
-    ._init              = world_mode_init,
-    ._get_num_entries   = world_mode_get_num_entries,
-    ._result            = world_mode_result,
-    ._destroy           = world_mode_destroy,
-    ._token_match       = world_mode_token_match,
-    ._get_display_value = world_mode_get_display_value,
-    ._get_icon          = world_mode_get_icon,
-    ._get_message       = NULL,
-    ._get_completion    = NULL,
-    ._preprocess_input  = NULL,
-    .private_data       = NULL,
-    .free               = NULL,
-  };
+{
+  .abi_version        = ABI_VERSION,
+  .name               = "world",
+  .cfg_name_key       = "display-world",
+  ._init              = world_mode_init,
+  ._get_num_entries   = world_mode_get_num_entries,
+  ._result            = world_mode_result,
+  ._destroy           = world_mode_destroy,
+  ._token_match       = world_mode_token_match,
+  ._get_display_value = world_mode_get_display_value,
+  ._get_icon          = world_mode_get_icon,
+  ._get_message       = NULL,
+  ._get_completion    = NULL,
+  ._preprocess_input  = NULL,
+  .private_data       = NULL,
+  .free               = NULL,
+};

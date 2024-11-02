@@ -1,11 +1,12 @@
-#include "web_search.h"
+#include "plugin.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include "../utils.h"
 
-#define OPEN_LINK_CMD = "xdg-open"
-#define SEARCH_QUERY_PREFIX = "https://www.google.com/search?q="
+#define OPEN_LINK_CMD "xdg-open"
+#define SEARCH_QUERY_PREFIX "https://www.google.com/search?q="
 
+Plugin web_search_plugin;
 char *web_search_query;
 
 void web_search_init()
@@ -64,16 +65,16 @@ unsigned int web_search_get_num_matches()
 }
 
 Plugin web_search_plugin =
-  {
-    .name = "web_search",
-    ._init = web_search_init,
-    ._destroy = web_search_destroy,
-    ._token_match = web_search_token_match,
-    ._get_cmd = web_search_get_cmd,
-    ._get_text = web_search_get_text,
-    ._get_icon = web_search_get_icon,
-    ._get_num_matches = web_search_get_num_matches,
-    ._get_priority = web_search_get_priority,
-    .message = NULL,
-    .priority = 0
-  };
+{
+  .name = "web_search",
+  ._init = web_search_init,
+  ._destroy = web_search_destroy,
+  ._token_match = web_search_token_match,
+  ._get_cmd = web_search_get_cmd,
+  ._get_text = web_search_get_text,
+  ._get_icon = web_search_get_icon,
+  ._get_num_matches = web_search_get_num_matches,
+  ._get_priority = web_search_get_priority,
+  .message = NULL,
+  .priority = 0
+};
