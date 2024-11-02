@@ -42,19 +42,19 @@ void apps_init()
     {
       if ( strlen( app_info[i] ) > 5)
       {
-	if ( starts_with( app_info[i], "Exec=" ))
+	if ( starts_with( app_info[i], "Exec=" ) && curr_app->cmd == NULL )
 	{
 	  char *app_cmd = g_malloc0( (strlen(app_info[i]) - 4) * sizeof( char ) );
 	  strncpy(app_cmd, app_info[i] + 5, strlen(app_info[i]) - 5);
 	  curr_app->cmd = app_cmd;
 	}
-	else if ( starts_with( app_info[i], "Icon=" ))
+	else if ( starts_with( app_info[i], "Icon=" ) && curr_app->icon == NULL )
 	{
 	  char *app_icon = g_malloc0( (strlen(app_info[i]) - 4) * sizeof( char ) );
 	  strncpy(app_icon, app_info[i] + 5, strlen(app_info[i]) - 5);
 	  curr_app->icon = app_icon;
 	}
-	else if ( starts_with( app_info[i], "Name=" ))
+	else if ( starts_with( app_info[i], "Name=" ) && curr_app->name == NULL)
 	{
 	  char *app_name = g_malloc0( (strlen(app_info[i]) - 4) * sizeof( char ) );
 	  strncpy(app_name, app_info[i] + 5, strlen(app_info[i]) - 5);

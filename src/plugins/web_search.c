@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include "../utils.h"
 
+#define OPEN_LINK_CMD = "xdg-open"
+#define SEARCH_QUERY_PREFIX = "https://www.google.com/search?q="
+
 char *web_search_query;
 
 void web_search_init()
@@ -40,7 +43,7 @@ int web_search_token_match(rofi_int_matcher **tokens, unsigned int index)
 char *web_search_get_cmd(int index)
 {
   char *cmd = NULL;
-  cmd = g_strconcat ( "xdg-open 'https://www.google.com/search?q=",
+  cmd = g_strconcat ( OPEN_LINK_CMD, " '",  SEARCH_QUERY_PREFIX,
 		      web_search_query, "'", NULL);
   return cmd;
 }
@@ -52,7 +55,7 @@ char *web_search_get_text(int index)
 
 char *web_search_get_icon(int index)
 {
-  return "~/Pictures/scr/cursor.png";
+  return "~/Pictures/icons/cursor.png";
 }
 
 unsigned int web_search_get_num_matches()
