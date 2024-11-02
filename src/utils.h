@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <rofi/mode.h>
 
+int str_len_to_char(char *search_str, char c);
 void rofi_view_reload(void); //view.h dne
 bool utils_token_match(char *search_str, char *actual_str);
 char *get_str_from_tokens(rofi_int_matcher **tokens);

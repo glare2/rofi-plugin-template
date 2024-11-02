@@ -2,6 +2,14 @@
 #include <unistd.h>
 #include <stdio.h>
 
+int str_len_to_char(char *search_str, char c)
+{
+  for(int i=0; i<strlen(search_str); i++)
+  {
+    if ( search_str[i] == c ) return i;
+  }
+  return -1;
+}
 bool utils_token_match(char *search_str, char *actual_str)
 {
   if ( strlen(search_str) > strlen(actual_str) ) return false;
