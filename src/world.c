@@ -125,9 +125,10 @@ static ModeMode world_mode_result ( Mode *sw, int mretv, char **input, unsigned 
   } else if ( mretv & MENU_QUICK_SWITCH ) {
     retv = ( mretv & MENU_LOWER_MASK );
   } else if ( ( mretv & MENU_OK ) ) { //ENTER
-    char *cmd = world_plugins[i]->_get_cmd( plugin_index );
-    if ( cmd != NULL )
+    char *cmd_get = world_plugins[i]->_get_cmd( plugin_index );
+    if ( cmd_get != NULL )
     {
+      char *cmd = g_strdup( cmd_get );
       helper_execute_command(NULL, cmd, false, NULL);
       g_free( cmd );
     } else printf("null cmd from plugin %s\n", world_plugins[i]->name);

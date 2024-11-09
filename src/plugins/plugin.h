@@ -17,3 +17,17 @@ typedef struct {
 } Plugin;
 #endif
 
+#define CREATE_PLUGIN_STRUCT(name_str, default_priority) \
+  { \
+    .name = name_str, \
+      ._init = NULL,  \
+      ._destroy = NULL, \
+      ._token_match = NULL, \
+      ._get_cmd = NULL, \
+      ._get_text = NULL, \
+      ._get_icon = NULL, \
+      ._get_num_matches = NULL, \
+      ._get_priority = NULL, \
+      .message = NULL, \
+      .priority = default_priority \
+   }

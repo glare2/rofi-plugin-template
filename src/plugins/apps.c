@@ -1,36 +1,39 @@
-#define APPS_ENTRY_COUNT 5
-
 #include "plugin.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include "../cache.h"
 #include "../utils.h"
 
-#define APPS_MEM_BLOCK 16
+#define APPS_ENTRY_COUNT 5
+// /var/lib/snapd/desktop/applications
 #define APPS_DIR "/usr/share/applications"
 #define APPS_DEFAULT_PRIORITY 40
 #define APP_CMD_KEY "Exec="
 #define APP_ICON_KEY "Icon="
 #define APP_NAME_KEY "Name="
+#define APPS_MEM_BLOCK 16
 
-typedef struct {
-  char *name;
-  char *icon;
-  char *cmd;
-} App;
+/*
+  Plugin name "apps" -- variables must be named
+    Plugin apps_plugin;
+    Cache apps_cache;
+    CacheEntry **apps_init(unsigned int *len_out);
+    int apps_get_priority(char *search_str);
+    
+ */
 
 Plugin apps_plugin;
-App **apps_array;
+Cache apps_cache;
+
+CacheEntry **apps_array;
 unsigned int apps_length;
 unsigned int apps_capacity;
-App *apps_cache [APPS_ENTRY_COUNT];
-int apps_cache_length;
 
-void apps_init()
+CacheEntry **apps_init(unsigned int *len_out)
 {
-  apps_cache_length = 0;
   apps_length = 0;
   apps_capacity = APPS_MEM_BLOCK;
-  apps_array = g_malloc0( apps_capacity * sizeof( App * ) );
+  apps_array = g_malloc0( apps_capacity * sizeof( CacheEntry * ) );
   char *app_list_cmd = g_strconcat( "ls ", APPS_DIR, NULL );
   char **app_files = get_command_lines(app_list_cmd);
   g_free( app_list_cmd );
@@ -45,11 +48,11 @@ void apps_init()
     char **app_info = get_command_lines(info_cmd);
     g_free( info_cmd );
     int i = 0;
-    apps_array[apps_length] = g_malloc0( sizeof(App) );
-    App *curr_app = apps_array[apps_length];
+    apps_array[apps_length] = g_malloc0( sizeof(CacheEntry) );
+    CacheEntry *curr_app = apps_array[apps_length];
     curr_app->cmd = NULL;
     curr_app->icon = NULL;
-    curr_app->name = NULL;
+    curr_app->text = NULL;
     int max_app_key_len = strlen(APP_CMD_KEY);
     if (strlen(APP_NAME_KEY) > max_app_key_len)
     {
@@ -89,11 +92,11 @@ void apps_init()
 	  strncpy(app_icon, app_info[i] + strlen(APP_ICON_KEY), strlen(app_info[i]) - strlen(APP_ICON_KEY));
 	  curr_app->icon = app_icon;
 	}
-	else if ( starts_with( app_info[i], APP_NAME_KEY ) && curr_app->name == NULL)
+	else if ( starts_with( app_info[i], APP_NAME_KEY ) && curr_app->text == NULL)
 	{
 	  char *app_name = g_malloc0( (strlen(app_info[i]) - strlen(APP_NAME_KEY) + 1) * sizeof( char ) );
 	  strncpy(app_name, app_info[i] + strlen(APP_NAME_KEY), strlen(app_info[i]) - strlen(APP_NAME_KEY));
-	  curr_app->name = app_name;
+	  curr_app->text = app_name;
 	}
       }
       g_free( app_info[i] );
@@ -102,154 +105,31 @@ void apps_init()
     }
     g_free( app_info );
     g_free( app_files[ apps_length ] );
-    if ( apps_cache_length < APPS_ENTRY_COUNT
-	 && apps_array[apps_length]->name != NULL )
-    {
-      apps_cache[apps_cache_length] = apps_array[apps_length];
-      apps_cache_length ++;
-    }
+    
     apps_length ++;
     if ( apps_length == apps_capacity )
     {
       apps_capacity += APPS_MEM_BLOCK;
-      apps_array = g_realloc( apps_array, apps_capacity * sizeof( App * ) );
+      apps_array = g_realloc( apps_array, apps_capacity * sizeof( CacheEntry * ) );
     }
   }
   g_free( app_files );
   apps_array[ apps_length ] = NULL;
-}
 
-void apps_destroy()
-{
-  int i = 0;
-  while ( apps_array[i] != NULL)
-  {
-    App *curr_app = apps_array[i];
-    if ( curr_app->name != NULL )
-    {
-      g_free(curr_app->name);
-      curr_app->name = NULL;
-    }
-    if ( curr_app->icon != NULL )
-    {
-      g_free(curr_app->icon);
-      curr_app->icon = NULL;
-    }
-    if ( curr_app->cmd != NULL ) 
-    {
-      g_free(curr_app->cmd);
-      curr_app->cmd = NULL;
-    }
-    g_free(curr_app);
-    curr_app = NULL;
-    i ++;
-  }
-  g_free( apps_array );
+  *len_out = apps_length;
+  return apps_array;
 }
 
 int apps_get_priority(char *search_str)
 {
-  if ( apps_cache[0] == NULL ) return 0;
+  if( search_str == NULL ) return APPS_DEFAULT_PRIORITY;
+  if ( apps_cache.data[0] == NULL ) return 0;
   int priority = strlen( search_str ) * 10;
   if ( priority < 100 ) return priority;
   return 100;
 }
 
-int apps_token_match(rofi_int_matcher **tokens, unsigned int index)
-{
-  if ( index == 0 )
-  {
-    char *search_str = get_str_from_tokens( tokens );
-    apps_plugin.priority = apps_get_priority( search_str );
-    //cache apps to the cache_array of len 5
-    int i = 0;
-    int count = 0;
-    // O(n)
-    while ( apps_array[i] != NULL )
-    {
-      int m = false;
-      if ( apps_array[i]->name != NULL ) m = helper_token_match(tokens, apps_array[i]->name);
-      if ( m == true )
-      {
-	apps_cache[ count ] = apps_array[i];
-	count ++;
-	if ( count == APPS_ENTRY_COUNT ) break;
-      }
-      i ++;
-    }
-    apps_cache_length = count;
-    if ( apps_cache_length == 0) apps_cache_length = 1; // CANNOT HIT ZERO!!
-    if ( count < APPS_ENTRY_COUNT )
-    { 
-      for ( int j = count; j < APPS_ENTRY_COUNT; j++ )
-      {	  
-	apps_cache[ j ] = NULL;
-      }
-    }
-    g_free( search_str );
-  }
-  
-  return true;
-}
+DEFINE_CACHE_GETTERS(apps, "No Applications Found")
 
-char *apps_get_cmd(int index)
-{
-  if( apps_cache[index] != NULL && apps_cache[index]->cmd != NULL)
-  {
-    return g_strdup( apps_cache[index]->cmd );
-  }
-  return NULL;
-}
+  INIT_PLUGIN(apps, "apps", APPS_ENTRY_COUNT);
 
-char *apps_get_text(int index)
-{
-  if( apps_cache[index] != NULL && apps_cache[index]->name != NULL)
-  {
-    /*
-    if ( index == APPS_ENTRY_COUNT - 1 )
-    {
-      char *label = g_malloc0( (strlen(apps_cache[index]->name) + 32) * sizeof(char));
-      sprintf(label, "%s (+%d more programs)",
-	      apps_cache[index]->name,
-	      apps_length - APPS_ENTRY_COUNT );
-      return label;
-      }*/
-    return apps_cache[index]->name;
-  }
-  return "No Applications Found";
-}
-
-char *apps_get_icon(int index)
-{
-  if( apps_cache[index] != NULL && apps_cache[index]->icon != NULL)
-  {
-    return apps_cache[index]->icon;
-  }
-  return "n/a";
-}
-
-unsigned int apps_get_num_matches()
-{
-  /*
-    Rofi seems to have an issue when the query string is cleared
-    that causes it to reset all entries to the first returned
-    num entries. By returning 1 as the first entry, we will
-    never try to display more than 1 null value.
-  */
-  return apps_cache_length;
-}
-
-Plugin apps_plugin =
-{
-  .name = "apps",
-  ._init = apps_init,
-  ._destroy = apps_destroy,
-  ._token_match = apps_token_match,
-  ._get_cmd = apps_get_cmd,
-  ._get_text = apps_get_text,
-  ._get_icon = apps_get_icon,
-  ._get_num_matches = apps_get_num_matches,
-  ._get_priority = apps_get_priority,
-  .message = NULL,
-  .priority = APPS_DEFAULT_PRIORITY
-};
