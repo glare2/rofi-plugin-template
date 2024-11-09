@@ -7,7 +7,15 @@ void cache_init(Cache *cache)
 {
   cache->array = cache->_init( &cache->array_length );
   cache->data = g_malloc0( cache->max_length * sizeof( CacheEntry *) );
-  cache->length = cache->max_length;
+  if ( cache->array_length < cache->max_length )
+  {
+    cache->length = cache->array_length;
+    if ( cache->length < 1 ) cache->length = 1; // CANNOT HIT ZERO!!
+  }
+  else
+  {
+    cache->length = cache->max_length;
+  }
   for (int i=0; i < cache->length && i < cache->array_length; i++)
   {
     cache->data[i] = cache->array[i];
@@ -41,6 +49,9 @@ void cache_destroy(Cache *cache)
   g_free( cache->data );
 }
 
+// for a static cache->array, call this function when index == 0
+// this will update the cache's priority & update cache->data
+// using rofi's helper_token_match
 void cache_token_match(Cache *cache, Plugin *plugin, rofi_int_matcher **tokens)
 {
   char *search_str = get_str_from_tokens( tokens );

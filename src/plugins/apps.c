@@ -129,6 +129,12 @@ int apps_get_priority(char *search_str)
   return 100;
 }
 
+int apps_token_match(rofi_int_matcher **tokens, unsigned int index)
+{
+  if ( index == 0 ) cache_token_match( &apps_cache, &apps_plugin, tokens);
+  return true;
+}
+
 DEFINE_CACHE_GETTERS(apps, "No Applications Found")
 
   INIT_PLUGIN(apps, "apps", APPS_ENTRY_COUNT);

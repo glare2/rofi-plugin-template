@@ -10,6 +10,7 @@ typedef struct {
 typedef struct {
   CacheEntry **(*_init)(unsigned int *length);
   int (*_get_priority)(char *search_str);
+  int (*_token_match)(rofi_int_matcher **tokens, unsigned int index);
   CacheEntry **array;
   unsigned int array_length;
   CacheEntry **data;
@@ -61,8 +62,7 @@ void cache_token_match(Cache *cache, Plugin *plugin, rofi_int_matcher **tokens);
      cache_destroy( & (name##_cache) );		\
    } \
    int name##_autogen_token_match(rofi_int_matcher **tokens, unsigned int index) { \
-     if ( index == 0 ) cache_token_match(& (name##_cache), & (name##_plugin), tokens); \
-     return true; \
+     return name##_cache._token_match(tokens, index); \
    }
 
 //pass plugin* reference
@@ -84,6 +84,7 @@ void cache_token_match(Cache *cache, Plugin *plugin, rofi_int_matcher **tokens);
     { \
       ._init = name_ref##_init, \
       ._get_priority = name_ref##_get_priority, \
+      ._token_match = name_ref##_token_match, \
       .array = NULL,				\
       .array_length = 0, \
       .data = NULL, \
