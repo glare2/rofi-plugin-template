@@ -17,7 +17,7 @@ typedef struct {
   unsigned int max_length;
 } Cache;
 
-int cache_init(Cache *cache);
+void cache_init(Cache *cache);
 void cache_destroy(Cache *cache);
 void cache_token_match(Cache *cache, Plugin *plugin, rofi_int_matcher **tokens);
 
@@ -55,7 +55,7 @@ void cache_token_match(Cache *cache, Plugin *plugin, rofi_int_matcher **tokens);
      return name##_cache._get_priority( search_str );	 \
    } \
    void name##_autogen_init() { \
-     name##_plugin.priority = cache_init( & (name##_cache) );		\
+     cache_init( & (name##_cache) );		\
    } \
    void name##_autogen_destroy() { \
      cache_destroy( & (name##_cache) );		\
@@ -79,7 +79,6 @@ void cache_token_match(Cache *cache, Plugin *plugin, rofi_int_matcher **tokens);
       ._get_num_matches = name_ref##_autogen_get_num_matches, \
       .name = plg_name,					  \
       .message = NULL,					  \
-      .priority = -1,				  \
     }; \
   Cache name_ref##_cache = \
     { \

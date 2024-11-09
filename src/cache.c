@@ -3,8 +3,7 @@
 #include "utils.h"
 #include <stdbool.h>
 
-//returns default priority
-int cache_init(Cache *cache)
+void cache_init(Cache *cache)
 {
   cache->array = cache->_init( &cache->array_length );
   cache->data = g_malloc0( cache->max_length * sizeof( CacheEntry *) );
@@ -13,7 +12,6 @@ int cache_init(Cache *cache)
   {
     cache->data[i] = cache->array[i];
   }
-  return cache->_get_priority(NULL);
 }
 
 void cache_destroy(Cache *cache)

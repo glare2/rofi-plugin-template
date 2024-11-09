@@ -5,6 +5,7 @@
 
 #define OPEN_LINK_CMD "xdg-open"
 #define SEARCH_QUERY_PREFIX "https://www.google.com/search?q="
+#define SEARCH_DEFAULT_PRIORITY 0
 
 Plugin web_search_plugin;
 char *web_search_query;
@@ -21,6 +22,7 @@ void web_search_destroy()
 
 int web_search_get_priority(char *search_str)
 {
+  if ( search_str == NULL ) return SEARCH_DEFAULT_PRIORITY;
   // higher char count, spaces, punctuation, sentence structure
   int search_len = strlen( search_str );
   if ( search_len < 5 ) return 5;
@@ -76,5 +78,4 @@ Plugin web_search_plugin =
   ._get_num_matches = web_search_get_num_matches,
   ._get_priority = web_search_get_priority,
   .message = NULL,
-  .priority = 0
 };
