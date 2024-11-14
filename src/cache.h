@@ -1,5 +1,6 @@
 #include <rofi/helper.h>
 #include <stdio.h>
+#include "utils.h"
 
 typedef struct {
   char *text;
@@ -8,9 +9,11 @@ typedef struct {
 } CacheEntry;
 
 typedef struct {
-  CacheEntry **(*_init)(unsigned int *length);
+  CacheEntry **(*_init)(unsigned int *length, int *cache_len);
+  void (*_destroy)();
   int (*_get_priority)(char *search_str);
   int (*_token_match)(rofi_int_matcher **tokens, unsigned int index);
+  char *(*_get_error_text)(int index);
   CacheEntry **array;
   unsigned int array_length;
   CacheEntry **data;
@@ -29,8 +32,7 @@ void cache_token_match(Cache *cache, Plugin *plugin, rofi_int_matcher **tokens);
   .##func_name = name##func_name,
 
 // pass name as plugin prefix (i.e. apps)
-// pass err_str as str (i.e. "No Apps Found")
-#define DEFINE_CACHE_GETTERS(name, err_str) \
+#define DEFINE_CACHE_GETTERS(name) \
   char *name##_autogen_get_cmd(int index) { \
     if( name##_cache.data[index] != NULL && name##_cache.data[index]->cmd != NULL) { \
       return name##_cache.data[index]->cmd; \
@@ -41,7 +43,7 @@ void cache_token_match(Cache *cache, Plugin *plugin, rofi_int_matcher **tokens);
     if( name##_cache.data[index] != NULL && name##_cache.data[index]->text != NULL) { \
       return name##_cache.data[index]->text; \
     } \
-    return err_str; \
+    return name##_cache._get_error_text(index);	\
   } \
   char *name##_autogen_get_icon(int index) { \
     if( name##_cache.data[index] != NULL && name##_cache.data[index]->icon != NULL) { \
@@ -56,17 +58,19 @@ void cache_token_match(Cache *cache, Plugin *plugin, rofi_int_matcher **tokens);
      return name##_cache._get_priority( search_str );	 \
    } \
    void name##_autogen_init() { \
-     cache_init( & (name##_cache) );		\
+     cache_init( & (name##_cache) );	\
    } \
    void name##_autogen_destroy() { \
      cache_destroy( & (name##_cache) );		\
+     name##_cache._destroy(); \
    } \
    int name##_autogen_token_match(rofi_int_matcher **tokens, unsigned int index) { \
      return name##_cache._token_match(tokens, index); \
    }
 
-//pass plugin* reference
-#define INIT_PLUGIN(name_ref, plg_name, cap_val)	\
+//pass name of plugin -- not a string! (i.e. apps)
+#define INIT_PLUGIN(name_ref)	\
+  DEFINE_CACHE_GETTERS(name_ref) \
   Plugin name_ref##_plugin = \
     { \
       ._init = name_ref##_autogen_init, \
@@ -77,18 +81,20 @@ void cache_token_match(Cache *cache, Plugin *plugin, rofi_int_matcher **tokens);
       ._get_text = name_ref##_autogen_get_text, \
       ._get_icon = name_ref##_autogen_get_icon, \
       ._get_num_matches = name_ref##_autogen_get_num_matches, \
-      .name = plg_name,					  \
+      .name = STR(name_ref),				      \
       .message = NULL,					  \
     }; \
   Cache name_ref##_cache = \
     { \
       ._init = name_ref##_init, \
+      ._destroy = name_ref##_destroy, \
       ._get_priority = name_ref##_get_priority, \
       ._token_match = name_ref##_token_match, \
+      ._get_error_text = name_ref##_get_error_text, \
       .array = NULL,				\
       .array_length = 0, \
       .data = NULL, \
       .length = 0, \
-      .max_length = cap_val \
+      .max_length = 0 \
     }
 

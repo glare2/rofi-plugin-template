@@ -5,4 +5,6 @@
 
 #define WORLD_PLUGIN_REGISTRY \
   WORLD_PLUGIN(web_search_plugin) \
-  WORLD_PLUGIN(apps_plugin) 
+  WORLD_PLUGIN(apps_plugin) \
+       WORLD_PLUGIN(files_plugin)
+

@@ -6,6 +6,7 @@
 #define OPEN_LINK_CMD "xdg-open"
 #define SEARCH_QUERY_PREFIX "https://www.google.com/search?q="
 #define SEARCH_DEFAULT_PRIORITY 0
+#define SEARCH_ICON "~/Pictures/icons/cursor.png"
 
 Plugin web_search_plugin;
 char *web_search_query;
@@ -58,7 +59,7 @@ char *web_search_get_text(int index)
 
 char *web_search_get_icon(int index)
 {
-  return "~/Pictures/icons/cursor.png";
+  return SEARCH_ICON;
 }
 
 unsigned int web_search_get_num_matches()

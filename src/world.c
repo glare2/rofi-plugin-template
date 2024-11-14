@@ -1,5 +1,7 @@
 // LICENSED UNDER THE MIT/X11 License -- SEE WORLD.H
 
+#define WORLD_ERROR_ICON "~/Pictures/icons/err-icon.jpg"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -156,22 +158,34 @@ static char *world_mode_get_display_value ( const Mode *sw, unsigned int selecte
   return g_strdup( world_plugins[i]->_get_text ( plugin_index ) );
 }
 
+cairo_surface_t *world_fetch_icon( char *icon_path, int height )
+{
+  uint32_t icon_fetcher_request = icon_map.get(icon_path);
+  if ( icon_fetcher_request <= 0 )
+  {
+    icon_fetcher_request = rofi_icon_fetcher_query ( icon_path, height );
+    icon_map.set(icon_path, icon_fetcher_request);
+  }
+  cairo_surface_t *surf = rofi_icon_fetcher_get ( icon_fetcher_request );
+  if ( surf != NULL ) return surf;
+  return NULL;
+}
+
 static cairo_surface_t *world_mode_get_icon ( const Mode *sw, unsigned int selected_line, int height )
 {
   int i = 0;
   int plugin_index = get_plugin_index(selected_line, &i);
   if ( world_plugins[i] == NULL ) return NULL;
 
-  char *icon_path = world_plugins[i]->_get_icon ( plugin_index ); 
+  char *icon_path = world_plugins[i]->_get_icon ( plugin_index );
+  if ( icon_path == NULL ) return NULL;
+  if ( icon_path == "n/a" )
+  {
+    return world_fetch_icon( WORLD_ERROR_ICON, height );
+  }
   if ( icon_path != NULL)
   {
-    uint32_t icon_fetcher_request = icon_map.get(icon_path);
-    if ( icon_fetcher_request <= 0 )
-    {
-      icon_fetcher_request = rofi_icon_fetcher_query ( icon_path, height );
-      icon_map.set(icon_path, icon_fetcher_request);
-    }
-    return rofi_icon_fetcher_get ( icon_fetcher_request );
+    return world_fetch_icon( icon_path, height );
   }
   return NULL;
 }

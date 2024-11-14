@@ -29,8 +29,9 @@ CacheEntry **apps_array;
 unsigned int apps_length;
 unsigned int apps_capacity;
 
-CacheEntry **apps_init(unsigned int *len_out)
+CacheEntry **apps_init(unsigned int *len_out, int *cache_len_out)
 {
+  *cache_len_out = APPS_ENTRY_COUNT;
   apps_length = 0;
   apps_capacity = APPS_MEM_BLOCK;
   apps_array = g_malloc0( apps_capacity * sizeof( CacheEntry * ) );
@@ -120,6 +121,11 @@ CacheEntry **apps_init(unsigned int *len_out)
   return apps_array;
 }
 
+void apps_destroy()
+{
+  // nothing to destroy
+}
+
 int apps_get_priority(char *search_str)
 {
   if( search_str == NULL ) return APPS_DEFAULT_PRIORITY;
@@ -135,7 +141,10 @@ int apps_token_match(rofi_int_matcher **tokens, unsigned int index)
   return true;
 }
 
-DEFINE_CACHE_GETTERS(apps, "No Applications Found")
+char *apps_get_error_text(int index)
+{
+  return "No Applications Found";
+}
 
-  INIT_PLUGIN(apps, "apps", APPS_ENTRY_COUNT);
+INIT_PLUGIN(apps);
 

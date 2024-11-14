@@ -18,6 +18,7 @@ bool utils_token_match(char *search_str, char *actual_str)
 
 char *get_str_from_tokens(rofi_int_matcher **tokens)
 {
+  if ( tokens == NULL ) return NULL;
   int i = 0;
   char *final_str = NULL;
   if ( tokens[i] != NULL )

@@ -1,6 +1,11 @@
 #include <stdbool.h>
 #include <rofi/mode.h>
 
+// https://stackoverflow.com/a/40591483
+#define STR_IMPL_(x) #x      //stringify argument
+#define STR(x) STR_IMPL_(x)  //indirection to expand argument macros
+
+
 int str_len_to_char(char *search_str, char c);
 void rofi_view_reload(void); //view.h dne
 bool utils_token_match(char *search_str, char *actual_str);
